@@ -21,7 +21,9 @@ Assignments in Node.js in Web services (T-514-VEFT, Vefþjónustur, 2015-3)
 - curl -XPOST -d "{\"name\": \"Atli\", \"email\": \"atlisg12@ru.is\"}" -H "Content-Type: Application/json" http://localhost:4000/api/users
 
 #### /api/users/{id}/punches - GET
-- curl http://localhost:4000/api/users/2d7836ed-5bc8-43ee-9da1-ccc1ead53d4f/punches | python -m json.tool
+- curl http://localhost:4000/api/users/{user id}/punches | python -m json.tool
 
 #### /api/users/{id}/punches - POST
 - curl -XPOST -d "{\"id\": \"{company id}\"}" -H "Content-Type: Application/json" http://localhost:4000/api/users/{user id}/punches
+
+#### /api/users/{id}/punches?

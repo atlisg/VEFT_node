@@ -69,7 +69,7 @@ app.post('/api/users', (req, res) => {
 
 	data.timestamp = new Date();
 	data.id = uuid.v4();
-	data.companies = [];
+	data.punches = [];
 
 	users.push(data);
 	res.status(201).send(data);
@@ -83,9 +83,9 @@ app.get('/api/users/:id/punches', (req, res) => {
 	});
 
 	if (userEntry) {
-		res.send(userEntry.companies);
+		res.send(userEntry.punches);
 	} else {
-		res.status(404).send('No company entry found');
+		res.status(404).send('No user entry found');
 	}
 });
 
@@ -96,30 +96,21 @@ app.post('/api/users/:id/punches', (req, res) => {
 	const userEntry = _.find(users, (user) => {
 		return user.id === id;
 	});
-	const cEntry = {};
+
 	const companyEntry = _.find(companies, (company) => {
-		cEntry.id = company.id;
-		cEntry.punchCount = company.punchCount;
 		return company.id === data.id;
 	});
+
 	if (userEntry) {
 		if (companyEntry) {
-			var UHCEntry = {};
-			const userHasComp = _.find(userEntry.companies, (comp) => {
-				UHCEntry = comp;
-				return comp.id === data.id;
-			});
-			if (userHasComp) {
-				UHCEntry.punches -= 1;
-			} else {
-				const userComp = {
-					id: cEntry.id,
-					punches: cEntry.punchCount
-				}
-				userEntry.companies.push(userComp);
+			var punch = {
+				cID: companyEntry.id,
+				cName: companyEntry.name,
+				timestamp: new Date()
 			}
 
-			res.send(userEntry);
+			userEntry.punches.push(punch);
+			res.send(userEntry.punches);
 		} else {
 			res.status(404).send('No company entry found');
 		}
