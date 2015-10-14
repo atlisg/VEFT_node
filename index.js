@@ -76,6 +76,7 @@ app.post('/api/users', (req, res) => {
 });
 
 app.get('/api/users/:id/punches', (req, res) => {
+	const query = req.query;
 	const id = req.params.id;
 
 	const userEntry = _.find(users, (user) => {
@@ -83,7 +84,13 @@ app.get('/api/users/:id/punches', (req, res) => {
 	});
 
 	if (userEntry) {
-		res.send(userEntry.punches);
+		var punches = userEntry.punches;
+		if (query.hasOwnProperty('company')) {
+			punches = _.filter(userEntry.punches, (punch) => {
+				return punch.cID === req.query.company;
+			});
+		}
+		res.send(punches);
 	} else {
 		res.status(404).send('No user entry found');
 	}
