@@ -1,12 +1,12 @@
 'use strict';
 
-// Libraries
+// Modules
 const express = require('express');
 var bodyParser = require('body-parser');
 var uuid = require('node-uuid');
 const _ = require('lodash');
 
-// Global variables
+// Globals
 const port = 4000;
 const app = express();
 const companies = [];
