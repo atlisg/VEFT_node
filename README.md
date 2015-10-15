@@ -1,6 +1,12 @@
 # VEFT_node
 Assignments in Node.js in Web services (T-514-VEFT, Vefþjónustur, 2015-3)
 
+## Til að keyra:
+
+`npm install`
+
+`node index.js`
+
 ## Til að testa:
 
 #### /api/companies - GET
