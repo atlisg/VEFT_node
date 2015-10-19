@@ -166,7 +166,8 @@ app.post('/punchcard/:company_id', (req, res) => {
 					return;
 				}
 				// Chech if the user has a punchcard with the company
-				models.Punchcard.findOne( { $and:[ {'user_id': user_id}, {'company_id': id} ]}, (err, doc) => {
+				models.Punchcard.findOne( { 
+					$and:[ {'user_id': user_id}, {'company_id': id} ]}, (err, doc) => {
 					if (err) {
 						res.status(500).send('Server error.\n');
 						return;
@@ -177,7 +178,7 @@ app.post('/punchcard/:company_id', (req, res) => {
 						var diffDays = Math.ceil(diff / (1000 * 3600 * 24));
 //						console.log('time difference in days is', diffDays);
 						if (diffDays <= lifetime) {
-							res.status(409).send("This user has an active punchcard from this company.\n");
+							res.status(409).send("User has an active punchcard from this company.\n");
 							return;
 						}
 					}
