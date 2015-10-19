@@ -12,12 +12,11 @@ const models = require('./models');
 // Globals
 const port = 4000;
 const app = express();
-const companies = [];
-const users = [];
 const adminToken = '1234a56bcd78901e234fg567';
 
 app.use(bodyParser.json());
 
+// Connect to MongoDB
 mongoose.connect('localhost/clipper');
 mongoose.connection.once('open', function() {
 	console.log('mongoose is connected');
@@ -27,10 +26,14 @@ mongoose.connection.once('open', function() {
 });
 
 // Fetching a list of all companies
-app.get('/api/companies', (req, res) => {
+app.get('/api/company', (req, res) => {
 	models.Company.find({}, (err, docs) => {
 		if (err) {
 			res.status(500).send('Server error.\n');
+			return;
+		}
+		if (docs.length === 0) {
+			res.status(404).send('No companies found.\n');
 			return;
 		}
 		res.status(200).send(docs);
@@ -38,7 +41,7 @@ app.get('/api/companies', (req, res) => {
 });
 
 // Adding a new company to the app
-app.post('/api/companies', (req, res) => {
+app.post('/api/company', (req, res) => {
 	// Only admin can post
 	if (adminToken !== req.headers.token) {
 		res.status(401).send("You don't have authorization to add a company.\n");
@@ -67,36 +70,46 @@ app.post('/api/companies', (req, res) => {
 });
 
 // Fetch company by id
-app.get('/api/companies/:id', (req, res) => {
+app.get('/api/company/:id', (req, res) => {
 	const id = req.params.id;
 	models.Company.findOne({ _id: id }, (err, doc) => {
 		if (err) {
-			res.status(500).send('Server error');
+			res.status(500).send('Server error\n');
 			return;
 		}
 		if (doc) {
 			res.status(200).send(doc);
 		} else {
-			res.status(404).send('No match for company_id:', id);
+			res.status(404).send('No match for company.\n');
 		}
 		return;
 	});
 });
 
 // Fetching a list of all users
-app.get('/users', (req, res) => {
+app.get('/user', (req, res) => {
 	models.User.find({}, (err, docs) => {
 		if (err) {
-			res.status(500).send('Server error');
+			res.status(500).send('Server error\n');
 			return;
 		}
-		// TODO: remove token from each user
-		res.status(200).send(docs);
+		if (docs.length === 0) {
+			res.status(404).send('No users found.\n')
+			return;
+		}
+		// Remove token from each user
+		var users = [];
+		for (var i = 0; i < docs.length; i++) {
+			var user = docs[i].toObject();
+			delete user.token;
+			users.push(user);
+		}
+		res.status(200).send(users);
 	});
 });
 
 // Adding a new user to the app (bonus)
-app.post('/users', (req, res) => {
+app.post('/user', (req, res) => {
 	// Only admin can post
 	if (adminToken !== req.headers.token) {
 		res.status(401).send("You don't have authorization to add a user.\n");
