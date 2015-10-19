@@ -30,7 +30,7 @@ mongoose.connection.once('open', function() {
 app.get('/api/companies', (req, res) => {
 	models.Company.find({}, (err, docs) => {
 		if (err) {
-			res.status(500).send(err);
+			res.status(500).send('Server error.\n');
 			return;
 		}
 		res.status(200).send(docs);
@@ -41,11 +41,11 @@ app.get('/api/companies', (req, res) => {
 app.post('/api/companies', (req, res) => {
 	// Only admin can post
 	if (adminToken !== req.headers.token) {
-		res.status(401).send('You don\'t have authorization to add a company.\n');
+		res.status(401).send("You don't have authorization to add a company.\n");
 		return;
 	}
 
-	// JSON object from body
+	// create company doc from JSON object from body
 	const c = new models.Company(req.body);
 
 	// Validate data.
@@ -71,38 +71,39 @@ app.get('/api/companies/:id', (req, res) => {
 	const id = req.params.id;
 	models.Company.findOne({ _id: id }, (err, doc) => {
 		if (err) {
-			res.status(500).send(err);
+			res.status(500).send('Server error');
 			return;
 		}
 		if (doc) {
 			res.status(200).send(doc);
 		} else {
-			res.status(404).send(doc);
+			res.status(404).send('No match for company_id:', id);
 		}
 		return;
 	});
 });
 
 // Fetching a list of all users
-app.get('/api/users', (req, res) => {
+app.get('/users', (req, res) => {
 	models.User.find({}, (err, docs) => {
 		if (err) {
-			res.status(500).send(err);
+			res.status(500).send('Server error');
 			return;
 		}
+		// TODO: remove token from each user
 		res.status(200).send(docs);
 	});
 });
 
-// Adding a new user to the app
-app.post('/api/users', (req, res) => {
+// Adding a new user to the app (bonus)
+app.post('/users', (req, res) => {
 	// Only admin can post
 	if (adminToken !== req.headers.token) {
-		res.status(401).send('You don\'t have authorization to add a user.\n');
+		res.status(401).send("You don't have authorization to add a user.\n");
 		return;
 	}
 
-	// JSON object from body
+	// create user doc from JSON object from body
 	const u = new models.User(req.body);
 
 	// Validate data.
@@ -123,61 +124,75 @@ app.post('/api/users', (req, res) => {
 	});
 });
 
-// Fetching a list of all punches for a given user
-app.get('/api/users/:id/punches', (req, res) => {
-	const query = req.query;
-	const id = req.params.id;
-
-	// Find the user in the list
-	const userEntry = _.find(users, (user) => {
-		return user.id === id;
-	});
-
-	if (userEntry) {
-		var punches = userEntry.punches;
-		// Filter user's punches if requested
-		if (query.hasOwnProperty('company')) {
-			punches = _.filter(userEntry.punches, (punch) => {
-				return punch.cID === req.query.company;
-			});
+// Adding a new punchcard
+app.post('/punchcard/:company_id', (req, res) => {
+	// Find user document
+	const userToken = req.headers.token;
+	models.User.findOne({ 'token': userToken }, (err, doc) => {
+		if (err) {
+			res.status(500).send('Server error.\n');
+			return;
 		}
-		res.send(punches);
-	} else {
-		res.status(404).send('No user entry found');
-	}
-});
+		if (!doc) {
+			res.status(401).send("Couldn't find user.\n");
+			return;
+		}
+		var user_id = doc._id;
 
-// Adding a new punch to a user
-app.post('/api/users/:id/punches', (req, res) => {
-	const id = req.params.id;
-	const data = req.body;
-
-	// Find the user in the list
-	const userEntry = _.find(users, (user) => {
-		return user.id === id;
-	});
-
-	// Find the company in the list
-	const companyEntry = _.find(companies, (company) => {
-		return company.id === data.id;
-	});
-
-	if (userEntry) {
-		if (companyEntry) {
-			// Create punch object
-			var punch = {
-				cID: companyEntry.id,
-				cName: companyEntry.name,
-				timestamp: new Date()
+		// Find company document
+		const id = req.params.company_id;
+		models.Company.findOne({ _id: id }, (err, doc) => {
+			if (err) {
+				res.status(500).send('Server error.\n');
+				return;
 			}
+			if (!doc) {
+				res.status(404).send("Couldn't find company.\n");
+				return;
+			}
+			var lifetime = doc.punchcard_lifetime;
 
-			userEntry.punches.push(punch);
-			res.send(userEntry.punches);
-		} else {
-			res.status(404).send('No company entry found');
-		}
-	} else {
-		res.status(404).send('No user entry found');
-	}
+			// Create punchcard doc from JSON object from body
+			var t = req.body;
+			t.company_id = id;
+			t.user_id = user_id;
+			const p = new models.Punchcard(t);
+			const now = new Date();
+
+			// Validate data.
+			p.validate((err) => {
+				if (err) {
+					res.status(412).send("Couldn't save punch because payload was invalid.\n");
+					return;
+				}
+				// Chech if the user has a punchcard with the company
+				models.Punchcard.findOne( { $and:[ {'user_id': user_id}, {'company_id': id} ]}, (err, doc) => {
+					if (err) {
+						res.status(500).send('Server error.\n');
+						return;
+					}
+					if (doc) {
+						// Check if the punchcard is active
+						const diff = now - doc.created;
+						var diffDays = Math.ceil(diff / (1000 * 3600 * 24));
+//						console.log('time difference in days is', diffDays);
+						if (diffDays <= lifetime) {
+							res.status(409).send("This user has an active punchcard from this company.\n");
+							return;
+						}
+					}
+					// Save document
+					p.save((err, doc) => {
+						if (err) {
+							res.status(500).send('Server error.\n');
+							return;
+						}
+						res.status(201).send(doc);
+						return;
+					});
+				});
+			});
+		});
+	});
 });
 

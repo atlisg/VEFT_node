@@ -39,8 +39,8 @@ const CompanySchema = mongoose.Schema({
 	punchcard_lifetime: {
 		type: Number,
 		required: true,
-		min: 1,
-		max: 50
+		min: 0,
+		max: 365
 	}
 });
 
@@ -48,6 +48,12 @@ const PunchcardSchema = mongoose.Schema({
 	created: {
 		type: Date,
 		default: new Date()
+	},
+	user_id: {
+		type: String
+	},
+	company_id: {
+		type: String
 	}
 });
 
