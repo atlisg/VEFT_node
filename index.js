@@ -33,7 +33,7 @@ app.get('/api/company', (req, res) => {
 			return;
 		}
 		if (docs.length === 0) {
-			res.status(404).send('No companies found.\n');
+			res.status(404).send(docs);
 			return;
 		}
 		res.status(200).send(docs);
@@ -94,7 +94,7 @@ app.get('/user', (req, res) => {
 			return;
 		}
 		if (docs.length === 0) {
-			res.status(404).send('No users found.\n')
+			res.status(404).send(docs);
 			return;
 		}
 		// Remove token from each user

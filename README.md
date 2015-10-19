@@ -35,6 +35,10 @@ Keyra með nodemon:
 #### /punchcard/{company_id} - POST
 - curl -XPOST -d "{}" -H "Content-Type: Application/json" -H "token: {user token}" http://localhost:4000/punchcard/{company id}
 
+Ath: Til að sjá 'user token' hjá notanda, þarf að keyra `mongo`. 
+Þar þarf að keyra `use clipper` og `db.users.find()`.
+Þá ætti notendalistinn að birtast með token-um.
+
 
 ## Assignment 7
 
