@@ -11,7 +11,7 @@ const port = 4000;
 
 //const uuid = require('node-uuid');
 
-app.use('/api', api);
+app.use('/', api);
 
 // Connect to MongoDB
 mongoose.connect('localhost/clipper');

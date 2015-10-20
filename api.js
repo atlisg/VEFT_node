@@ -12,7 +12,7 @@ const api = express();
 api.use(bodyParser.json());
 
 // Fetching a list of all companies
-api.get('/company', (req, res) => {
+api.get('api/company', (req, res) => {
 	models.Company.find({}, (err, docs) => {
 		if (err) {
 			res.status(500).send('Server error.\n');
@@ -27,7 +27,7 @@ api.get('/company', (req, res) => {
 });
 
 // Adding a new company to the api
-api.post('/company', (req, res) => {
+api.post('api/company', (req, res) => {
 	// Only admin can post
 	if (adminToken !== req.headers.token) {
 		res.status(401).send("You don't have authorization to add a company.\n");
@@ -56,7 +56,7 @@ api.post('/company', (req, res) => {
 });
 
 // Fetch company by id
-api.get('/company/:id', (req, res) => {
+api.get('api/company/:id', (req, res) => {
 	const id = req.params.id;
 	models.Company.findOne({ _id: id }, (err, doc) => {
 		if (err) {

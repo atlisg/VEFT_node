@@ -30,14 +30,14 @@ Keyra með nodemon:
 - curl http://localhost:4000/api/company/{company id} | python -m json.tool
 
 #### /user - GET
-- curl http://localhost:4000/api/user | python -m json.tool
+- curl http://localhost:4000/user | python -m json.tool
 
 #### /user - POST (bonus)
-- curl -XPOST -d "{\"name\": \"Aegir\", \"age\": \"23\"}" -H "Content-Type: Application/json" -H "token: 1234a56bcd78901e234fg567" http://localhost:4000/api/user
-- curl -XPOST -d "{\"name\": \"Atli\"}" -H "Content-Type: Application/json" -H "token: 1234a56bcd78901e234fg567" http://localhost:4000/api/user
+- curl -XPOST -d "{\"name\": \"Aegir\", \"age\": \"23\"}" -H "Content-Type: Application/json" -H "token: 1234a56bcd78901e234fg567" http://localhost:4000/user
+- curl -XPOST -d "{\"name\": \"Atli\"}" -H "Content-Type: Application/json" -H "token: 1234a56bcd78901e234fg567" http://localhost:4000/user
 
 #### /punchcard/{company_id} - POST
-- curl -XPOST -d "{}" -H "Content-Type: Application/json" -H "token: {user token}" http://localhost:4000/api/punchcard/{company id}
+- curl -XPOST -d "{}" -H "Content-Type: Application/json" -H "token: {user token}" http://localhost:4000/punchcard/{company id}
 
 Ath: Til að sjá 'user token' hjá notanda, þarf að keyra `mongo`. 
 Þar þarf að keyra `use clipper` og `db.users.find()`.
