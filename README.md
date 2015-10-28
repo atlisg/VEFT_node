@@ -7,7 +7,9 @@ Assignments in Node.js in Web services (T-514-VEFT, Vefþjónustur, 2015-3)
 
 MongoDB þarf að vera uppsett og keyrandi.
 
-`mongod --dbpath {pathForDatabase}`
+`mongod --dbpath {pathForDatabase}` 
+
+(f.ex: `mkdir /tmp/data` then `mongod --dbpath /tmp/data`)
 
 `npm install`
 

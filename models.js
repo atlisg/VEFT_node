@@ -6,16 +6,31 @@ const uuid = require('node-uuid');
 const UserSchema = mongoose.Schema({
 	token: {
 		type: String,
-		default: uuid.v4()
+		maxlength: 50,
+		minlength: 0,
+		default: ''
 	},
-	name: {
+	username: {
 		type: String,
 		required: true,
-		maxlength: 100,
-		minlength: 1
+		maxlength: 50,
+		minlength: 4
+	},
+	password: {
+		type: String,
+		required: true,
+		maxlength: 50,
+		minlength: 4
+	},
+	email: {
+		type: String,
+		required: true,
+		maxlength: 50,
+		minlength: 6
 	},
 	age: {
 		type: Number,
+		required: true,
 		min: 0,
 		max: 200
 	},

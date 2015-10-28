@@ -1,15 +1,44 @@
 'use strict';
 
+// Modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const models = require('./models');
 const _ = require('lodash');
 const ObjectID = require('mongodb').ObjectID;
+const kafka = require('kafka-node');
 
+// Globals
 const adminToken = '1234a56bcd78901e234fg567';
 const api = express();
+const HighLevelProducer = kafka.HighLevelProducer;
+const client = new kafka.Client('localhost:2181');
+const producer = new HighLevelProducer(client);
+
 
 api.use(bodyParser.json());
+
+api.use((req, res, next) => {
+	const request_details = {
+		'path': req.path,
+		'headers': req.headers,
+		'method': req.method,
+	};
+
+	const data = [{
+		topic: 'users',
+		messages: JSON.stringify(request_details),
+	}];
+
+	producer.send(data, (err, data) => {
+		if (err) {
+			console.log('Error:', err);
+			return;
+		}
+		next();
+	});
+});
+
 
 // Fetching a list of all companies
 api.get('/api/company', (req, res) => {
@@ -84,26 +113,23 @@ api.get('/user', (req, res) => {
 			return;
 		}
 		// Remove token from each user
-		var users = [];
+/*		var users = [];
 		for (var i = 0; i < docs.length; i++) {
 			var user = docs[i].toObject();
 			delete user.token;
 			users.push(user);
 		}
-		res.status(200).send(users);
+*/		res.status(200).send(docs);
 	});
 });
 
-// Adding a new user to the api (bonus)
-api.post('/user', (req, res) => {
-	// Only admin can post
-	if (adminToken !== req.headers.token) {
-		res.status(401).send("You don't have authorization to add a user.\n");
-		return;
-	}
+// ----------------- start of current assignment -------------------
 
+// Adding a new user to the database
+api.post('/user', bodyParser.json(), (req, res) => {
 	// create user doc from JSON object from body
-	const u = new models.User(req.body);
+	const user = req.body;
+	const u = new models.User(user);
 
 	// Validate data.
 	u.validate((err) => {
@@ -111,17 +137,75 @@ api.post('/user', (req, res) => {
 			res.status(412).send("Couldn't save user because payload was invalid.\n");
 			return;
 		}
-		// Save document
-		u.save((err, doc) => {
+		models.User.findOne({ 'username': user.username }, (err, doc) => {
 			if (err) {
 				res.status(500).send('Server error.\n');
 				return;
 			}
-			res.status(201).send({ 'user_id': doc._id });
-			return;
+			if (doc) {
+				res.status(409).send('Could not create user because username already exists.\n');
+				return;
+			}
+			models.User.findOne({ 'email': user.email }, (err, docu) => {
+				if (err) {
+					res.status(500).send('Server error.\n');
+					return;
+				}
+				if (docu){
+					res.status(409).send('Could not create user because email already exists.\n');
+					return;
+				}
+				// Save document
+				u.save((err, docum) => {
+					if (err) {
+						res.status(500).send('Server error.\n');
+						return;
+					}
+					const payload = [
+						{
+							topic: 'users',
+							messages: JSON.stringify(user),
+						}
+					];
+					// Send to producer
+					producer.send(payload, (err) => {
+						if (err) {
+							console.log(err);
+							res.status(500).send('Could not write to Kafka topic.\n');
+							return;
+						}
+						res.status(201).send({ 'user_id': docum._id });
+						return;
+					});
+				});
+			});
 		});
 	});
 });
+
+// Fetching token
+api.post('/token', (req, res) => {
+	const body = req.body;
+	models.User.findOne({ 'username': body.username }, (err, doc) => {
+		if (err) {
+			res.status(500).send('Server error.\n');
+			return;
+		}
+		if (!doc) {
+			res.status(401).send('No such username.\n');
+			return;
+		}
+		const user = doc.toObject();
+		if (user.password !== body.password) {
+			res.status(401).send('Wrong password for this user.\n');
+			return;
+		}
+		res.status(201).send({ 'token': user.token });
+		return;
+	});
+});
+
+// ------------------ end of current assignment --------------------
 
 // Adding a new punchcard
 api.post('/punchcard/:company_id', (req, res) => {
