@@ -7,39 +7,21 @@ Assignments in Node.js in Web services (T-514-VEFT, Vefþjónustur, 2015-3)
 
 1. Install Kafka and Zookeeper (sjá verkefnalýsingu).
 
-2. Install dependencies
+2. Install dependencies `npm install`.
 
-`npm install`
+3. Start Zookeeper: Verum í Kafka möppunni (hjá okkur: ~/Downloads/kafka_2.9.1-0.8.2.2) og keyrum `bin/zookeeper-server-start.sh config/zookeeper.properties`
 
-3. Start Zookeeper: Vertu í Kafka möppunni (hjá okkur: ~/Downloads/kafka_2.9.1-0.8.2.2) og keyrðu:
+4. Start Kafka: Verum í Kafka möppunni og keyrum `bin/kafka-server-start.sh config/server.properties`
 
-`bin/zookeeper-server-start.sh config/zookeeper.properties`
+5. Búum til nýtt topic: Verum í Kafka möppunni og keyrum `bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic users`
 
-4. Start Kafka: Vertu í Kafka möppunni og keyrðu:
+6. MongoDB þarf að vera uppsett og keyrandi: `mongod --dbpath {pathForDatabase}` (T.d. `mkdir /tmp/data` svo `mongod --dbpath /tmp/data`)
 
-`bin/kafka-server-start.sh config/server.properties`
+7. Keyrum upp serverinn (úr verkefnamöppunni): `node index.js`
+Keyra með nodemon: `~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
 
-5. MongoDB þarf að vera uppsett og keyrandi.
-
-`mongod --dbpath {pathForDatabase}` 
-
-(T.d. `mkdir /tmp/data` svo `mongod --dbpath /tmp/data`)
-
-6. Keyrðu upp serverinn (úr verkefnamöppunni):
-
-`node index.js`
-
-Keyra með nodemon:
-
-`~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
-
-7. Keyrðu upp consumerinn (úr verkefnamöppunni):
-
-`node token_consumer.js`
-
-Keyra með nodemon:
-
-`~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
+8. Keyrðu upp consumerinn (úr verkefnamöppunni): `node token_consumer.js`
+Keyra með nodemon: `~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
 
 ### Til að testa:
 
