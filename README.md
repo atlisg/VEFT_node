@@ -1,6 +1,56 @@
 # VEFT_node
 Assignments in Node.js in Web services (T-514-VEFT, Vefþjónustur, 2015-3)
 
+## Assignment 9
+
+### Til að keyra:
+
+1. Install Kafka and Zookeeper (sjá verkefnalýsingu).
+
+2. Install dependencies
+
+`npm install`
+
+3. Start Zookeeper: Vertu í Kafka möppunni (hjá okkur: ~/Downloads/kafka_2.9.1-0.8.2.2) og keyrðu:
+
+`bin/zookeeper-server-start.sh config/zookeeper.properties`
+
+4. Start Kafka: Vertu í Kafka möppunni og keyrðu:
+
+`bin/kafka-server-start.sh config/server.properties`
+
+5. MongoDB þarf að vera uppsett og keyrandi.
+
+`mongod --dbpath {pathForDatabase}` 
+
+(T.d. `mkdir /tmp/data` svo `mongod --dbpath /tmp/data`)
+
+6. Keyrðu upp serverinn (úr verkefnamöppunni):
+
+`node index.js`
+
+Keyra með nodemon:
+
+`~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
+
+7. Keyrðu upp consumerinn (úr verkefnamöppunni):
+
+`node token_consumer.js`
+
+Keyra með nodemon:
+
+`~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
+
+### Til að testa:
+
+#### /user - POST
+- curl -XPOST -d "{\"username\": \"Aegir\", \"email\": \"aegir@foxy.is\", \"password\": \"pungur\", \"age\": \"23\"}" -H "Content-Type: Application/json" http://localhost:4000/user
+- curl -XPOST -d "{\"username\": \"Atli\", \"email\": \"atli@li.is\", \"password\": \"rassar\", \"age\": \"35\"}" -H "Content-Type: Application/json" http://localhost:4000/user
+
+#### /token - POST
+- curl -XPOST -d "{\"username\": \"Atli\", \"password\": \"rassar\"}" -H "Content-Type: Application/json" http://localhost:4000/token
+
+
 ## Assignment 8
 
 ### Til að keyra:
