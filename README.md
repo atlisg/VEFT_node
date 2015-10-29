@@ -21,7 +21,7 @@ Assignments in Node.js in Web services (T-514-VEFT, Vefþjónustur, 2015-3)
 Keyra með nodemon: `~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
 
 8. Keyrðu upp consumerinn (úr verkefnamöppunni): `node token_consumer.js`
-Keyra með nodemon: `~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
+Keyra með nodemon: `~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js token_consumer.js`
 
 ### Til að testa:
 
