@@ -14,7 +14,7 @@ const api = express();
 const HighLevelProducer = kafka.HighLevelProducer;
 const client = new kafka.Client('localhost:2181');
 const producer = new HighLevelProducer(client);
-
+const cluster = 'http://localhost:9200/ClusterForPunchy/';
 
 api.use(bodyParser.json());
 
@@ -123,7 +123,7 @@ api.get('/user', (req, res) => {
 	});
 });
 
-// ----------------- start of current assignment -------------------
+// ----------------- start of last assignment -------------------
 
 // Adding a new user to the database
 api.post('/user', bodyParser.json(), (req, res) => {
@@ -205,7 +205,7 @@ api.post('/token', (req, res) => {
 	});
 });
 
-// ------------------ end of current assignment --------------------
+// ------------------ end of last assignment --------------------
 
 // Adding a new punchcard
 api.post('/punchcard/:company_id', (req, res) => {
@@ -279,5 +279,59 @@ api.post('/punchcard/:company_id', (req, res) => {
 		});
 	});
 });
+
+// ----------------- start of current assignment -------------------
+
+// Adding a new company to the api
+api.post('/companies', bodyParser.json(), (req, res) => {
+	// Only admin can post
+	if (adminToken !== req.headers.token) {
+		res.status(401).send("You don't have authorization to add a company.\n");
+		return;
+	}
+	// Payload must be JSON
+	if (!req.is('application/json')) {
+		res.status(415).send("Payload must be a JSON object.")
+	}
+
+	// create company doc from JSON object from body
+	const c = new models.Company(req.body);
+
+	// Validate data.
+	c.validate((err) => {
+		if (err) {
+			res.status(412).send("Couldn't save company because payload was invalid.\n");
+			return;
+		}
+
+		var company = {
+			q: 'title:' + c.title;
+		};
+		$.ajax({
+			url: {cluster + 'companies/'}/_search,
+			dataType: 'jsonp',
+			success: function (company) {
+				if (company.hits.total > 0) {
+					res.status(409).send("Company title already taken. Sorry.");
+				} else {
+					// Save to MongoDB
+					c.save((err, doc) => {
+						if (err) {
+							res.status(500).send('Server error.\n');
+							return;
+						}
+						// Save to Elastic Search
+						
+						res.status(201).send({ 'company_id': doc._id });
+						return;
+					});
+				}
+			} 
+		})
+	});	
+});
+
+
+// ----------------- end of current assignment -------------------
 
 module.exports = api;
