@@ -7,6 +7,10 @@ const models = require('./models');
 const _ = require('lodash');
 const ObjectID = require('mongodb').ObjectID;
 const kafka = require('kafka-node');
+const elasticsearch = require('elasticsearch');
+const elasticClient = new elasticsearch.Client({
+	host: 'localhost:9200'
+});
 
 // Globals
 const adminToken = '1234a56bcd78901e234fg567';
