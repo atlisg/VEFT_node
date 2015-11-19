@@ -88,23 +88,6 @@ api.post('/api/company', (req, res) => {
 	});	
 });
 
-// Fetch company by id
-api.get('/api/company/:id', (req, res) => {
-	const id = req.params.id;
-	models.Company.findOne({ _id: id }, (err, doc) => {
-		if (err) {
-			res.status(500).send('Server error\n');
-			return;
-		}
-		if (doc) {
-			res.status(200).send(doc);
-		} else {
-			res.status(404).send('No match for company.\n');
-		}
-		return;
-	});
-});
-
 // Fetching a list of all users
 api.get('/user', (req, res) => {
 	models.User.find({}, (err, docs) => {
@@ -117,13 +100,13 @@ api.get('/user', (req, res) => {
 			return;
 		}
 		// Remove token from each user
-/*		var users = [];
+		var users = [];
 		for (var i = 0; i < docs.length; i++) {
 			var user = docs[i].toObject();
 			delete user.token;
 			users.push(user);
 		}
-*/		res.status(200).send(docs);
+		res.status(200).send(docs);
 	});
 });
 
@@ -286,16 +269,24 @@ api.post('/punchcard/:company_id', (req, res) => {
 
 // ----------------- start of current assignment -------------------
 
-// Adding a new company to the api
-api.post('/companies', bodyParser.json(), (req, res) => {
+//Helper function, validates request
+var validatePostRequest = (req, res) => {
 	// Only admin can post
-	if (adminToken !== req.headers.token) {
+	if (adminToken !== req.headers.admin_token) {
 		res.status(401).send("You don't have authorization to add a company.\n");
-		return;
+		return false;
 	}
 	// Payload must be JSON
 	if (!req.is('application/json')) {
 		res.status(415).send("Payload must be a JSON object.");
+		return false;
+	}
+	return true;
+};
+
+// Adding a new company to the api
+api.post('/companies', bodyParser.json(), (req, res) => {
+	if (!validatePostRequest(req, res)) {
 		return;
 	}
 
@@ -350,7 +341,7 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 				}).then((respo) => {
 					console.log('\nElastic search indexing:')
 					console.log(respo);
-					res.status(201).send({ 'company_id': respo._id });
+					res.status(201).send({ 'id': respo._id });
 					return;
 				},(error) => {
 					res.status(500).send('Server error (elastic).\n');
@@ -361,50 +352,18 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 			console.log('err:');
 			console.log(err);
 		});
-
-		/*elasticClient.searchExists(company, (elasObj) => {
-			console.log(elasObj);
-			if (elasObj.status !== '404') {
-				res.status(409).send("Company title already taken. Sorry.");
-			} else {
-				
-			}
-		})*/
-
-		
-/*		$.ajax({
-			url: {cluster + 'companies/'}/_search,
-			dataType: 'jsonp',
-			success: function (company) {
-				if (company.hits.total > 0) {
-					res.status(409).send("Company title already taken. Sorry.");
-				} else {
-					// Save to MongoDB
-					c.save((err, doc) => {
-						if (err) {
-							res.status(500).send('Server error.\n');
-							return;
-						}
-						// Save to Elastic Search
-						
-						res.status(201).send({ 'company_id': doc._id });
-						return;
-					});
-				}
-			} 
-		})*/
 	});	
 });
 
 // Fetching a list of all companies
 api.get('/companies', (req, res) => {
-	const size = req.query.size || 20;
 	const page = req.query.page || 0;
+	const max = req.query.max  || 20;
 
 	elasticClient.search({
 		'index'  : 'punchy',
 		'type'   : 'companies',
-		'size'   : size,
+		'size'   : max,
 		'from'   : page,
 		"_source": [ "id", "title", "description", "url" ],
 		'body': {
@@ -445,6 +404,7 @@ api.delete('/companies/:id', (req, res) => {
 			'index'  : 'punchy',
 			'type'   : 'companies',
 			'id'     : cid
+
 		}).then((doc) => {
 			console.log(doc);
 			res.status(204).send('Document successfully deleted from mongoDB and elasticSearch.\n');
@@ -456,10 +416,118 @@ api.delete('/companies/:id', (req, res) => {
 
 });
 
+// Fetch company by id
+api.get('/companies/:id', (req, res) => {
+	const id = req.params.id;
+
+	models.Company.findOne({ _id: id }, (err, doc) => {
+		if (doc) {
+			var jsonObj = doc.toObject();
+			delete jsonObj.__v;
+			delete jsonObj.created;
+			jsonObj.id = doc._id;
+			delete jsonObj._id;
+			res.status(200).send(jsonObj);
+		} else {
+			res.status(404).send("Company not found.\n");
+			return;
+		}
+	});
+});
+
+// Update company with given id
+api.post('/companies/:id', (req, res) => {
+	/*
+		This route can be used to update a given company. 
+		The preconditions for POST /companies also apply for this route. 
+		Also, if no company is found with by the given :id this route should respond with status code 404. 
+		When the company has been updated in MongoDB then the corresponding ElasticSearch document must be re-indexed.
+	*/
+
+	const id = req.params.id;
+
+	models.Company.findOne({ _id: id }, (err, doc) => {
+		if (doc) {
+			// Company (doc) found, update it and the save it
+			if (!validatePostRequest(req, res)) {
+				return;
+			}
+
+			// create company doc from JSON object from body
+			const c = req.body;
+
+			elasticClient.search({
+					'index': 'punchy',
+					'type':  'companies',
+					'body': {
+						'query': {
+							"match": {
+								'title': c.title || ""
+							}
+						}
+					}
+				}).then((result) => {
+					if (c.title) {
+						// If the name already exists.
+						 if (result.hits.total > 0) {
+							console.log(result.hits.hits);
+							res.status(409).send("Company title already taken. Sorry.\n");
+							return;
+						}
+						doc.title = c.title;
+					}
+					if (c.created) {
+						doc.created = c.created;
+					}
+					if (c.url) {
+						doc.url = c.url;
+					}
+					if (c.description) {
+						doc.description = c.description;
+					}
+
+					// Save document
+					doc.save((err, doc) => {
+						if (err) {
+							res.status(500).send('Server error. (mongodb update)\n');
+							return;
+						}
+						// Update the search index
+						elasticClient.update({
+							'index': 'punchy',
+							'type':  'companies',
+							'id': id,
+							'body': {
+								'doc': {
+									'title': doc.title,
+									'created': doc.created,
+									'url': doc.url,
+									'description': doc.description
+								}
+							}
+						}, (err) => {
+							res.status(500).send(err);
+							return;
+						}, (response) => {
+							res.status(201).send(response);
+						});
+					});
+				});
+
+
+		} else {
+			res.status(404).send("Company not found.\n");
+			return;
+		}
+	});
+});
+
 
 // ----------------- end of current assignment -------------------
 
 module.exports = api;
+
+
 
 
 
