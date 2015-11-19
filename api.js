@@ -36,7 +36,6 @@ api.use((req, res, next) => {
 
 	producer.send(data, (err, data) => {
 		if (err) {
-			console.log('Error:', err);
 			return;
 		}
 		next();
@@ -157,7 +156,6 @@ api.post('/user', bodyParser.json(), (req, res) => {
 					// Send to producer
 					producer.send(payload, (err) => {
 						if (err) {
-							console.log(err);
 							res.status(500).send('Could not write to Kafka topic.\n');
 							return;
 						}
@@ -246,7 +244,6 @@ api.post('/punchcard/:company_id', (req, res) => {
 						// Check if the punchcard is active
 						const diff = now - doc.created;
 						var diffDays = Math.ceil(diff / (1000 * 3600 * 24));
-//						console.log('time difference in days is', diffDays);
 						if (diffDays <= lifetime) {
 							res.status(409).send("User has an active punchcard from this company.\n");
 							return;
@@ -343,8 +340,8 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 				});
 			});
 		}, (err) => {
-			console.log('err:');
-			console.log(err);
+			res.status(500).send('Server error.\n');
+			return;
 		});
 	});	
 });
@@ -393,7 +390,6 @@ api.delete('/companies/:id', (req, res) => {
 			'id'     : cid
 
 		}).then((doc) => {
-			console.log(doc);
 			res.status(204).send('Document successfully deleted from mongoDB and elasticSearch.\n');
 		}, (err) => {
 			res.status(500).send('Server error (ElasticSearch)\n')
@@ -494,7 +490,6 @@ api.post('/companies/:id', (req, res) => {
 					if (c.title) {
 						// If the name already exists.
 						 if (result.hits.total > 0) {
-							console.log(result.hits.hits);
 							res.status(409).send("Company title already taken. Sorry.\n");
 							return;
 						}
