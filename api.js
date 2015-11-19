@@ -8,9 +8,6 @@ const _ = require('lodash');
 const ObjectID = require('mongodb').ObjectID;
 const kafka = require('kafka-node');
 const elasticsearch = require('elasticsearch');
-const elasticClient = new elasticsearch.Client({
-	host: 'localhost:9200'
-});
 
 // Globals
 const adminToken = '1234a56bcd78901e234fg567';
@@ -18,7 +15,10 @@ const api = express();
 const HighLevelProducer = kafka.HighLevelProducer;
 const client = new kafka.Client('localhost:2181');
 const producer = new HighLevelProducer(client);
-
+const cluster = 'http://localhost:9200/ClusterForPunchy/';
+const elasticClient = new elasticsearch.Client({
+	host: 'localhost:9200'
+});
 
 api.use(bodyParser.json());
 
@@ -127,7 +127,7 @@ api.get('/user', (req, res) => {
 	});
 });
 
-// ----------------- start of current assignment -------------------
+// ----------------- start of last assignment -------------------
 
 // Adding a new user to the database
 api.post('/user', bodyParser.json(), (req, res) => {
@@ -209,7 +209,7 @@ api.post('/token', (req, res) => {
 	});
 });
 
-// ------------------ end of current assignment --------------------
+// ------------------ end of last assignment --------------------
 
 // Adding a new punchcard
 api.post('/punchcard/:company_id', (req, res) => {
@@ -283,5 +283,124 @@ api.post('/punchcard/:company_id', (req, res) => {
 		});
 	});
 });
+
+// ----------------- start of current assignment -------------------
+
+// Adding a new company to the api
+api.post('/companies', bodyParser.json(), (req, res) => {
+	// Only admin can post
+	if (adminToken !== req.headers.token) {
+		res.status(401).send("You don't have authorization to add a company.\n");
+		return;
+	}
+	// Payload must be JSON
+	if (!req.is('application/json')) {
+		res.status(415).send("Payload must be a JSON object.");
+		return;
+	}
+
+	// create company doc from JSON object from body
+	const c = new models.Company(req.body);
+
+	// Validate data.
+	c.validate((err) => {
+		if (err) {
+			res.status(412).send("Couldn't save company because payload was invalid.\n");
+			return;
+		}
+
+		var company = {
+			q: 'title:' + c.title
+		};
+
+		elasticClient.search({
+			'index': 'punchy',
+			'type':  'companies',
+			'body': {
+				'query': {
+					"match": {
+						'title': c.title
+					}
+				}
+			}
+		}).then((doc) => {
+			console.log('\nElastic search doc:');
+			console.log(doc);
+			if (doc.hits.total > 0) {
+				res.status(409).send("Company title already taken. Sorry.\n");
+				return;
+			}
+			// Save to MongoDB
+			c.save((err, doc) => {
+				if (err) {
+					res.status(500).send('Server error (mongoDB).\n');
+					return;
+				}
+				console.log('\nmongoDB doc:');
+				console.log(doc);
+				const data = {
+					'id'         : doc._id,
+					'title'      : doc.title,
+					'description': doc.description,
+					'url'        : doc.url,
+					'created'    : doc.created
+				}
+				// Save to Elastic Search
+				elasticClient.index({
+					'index' : 'punchy',
+					'type'  : 'companies',
+					'id'    : doc.id,
+					'body'  : data
+				}).then((respo) => {
+					console.log('\nElastic search indexing:')
+					console.log(respo);
+					res.status(201).send({ 'company_id': respo._id });
+					return;
+				},(error) => {
+					res.status(500).send('Server error (elastic).\n');
+					return;
+				});
+			});
+		}, (err) => {
+			console.log('err:');
+			console.log(err);
+		});
+
+		/*elasticClient.searchExists(company, (elasObj) => {
+			console.log(elasObj);
+			if (elasObj.status !== '404') {
+				res.status(409).send("Company title already taken. Sorry.");
+			} else {
+				
+			}
+		})*/
+
+		
+/*		$.ajax({
+			url: {cluster + 'companies/'}/_search,
+			dataType: 'jsonp',
+			success: function (company) {
+				if (company.hits.total > 0) {
+					res.status(409).send("Company title already taken. Sorry.");
+				} else {
+					// Save to MongoDB
+					c.save((err, doc) => {
+						if (err) {
+							res.status(500).send('Server error.\n');
+							return;
+						}
+						// Save to Elastic Search
+						
+						res.status(201).send({ 'company_id': doc._id });
+						return;
+					});
+				}
+			} 
+		})*/
+	});	
+});
+
+
+// ----------------- end of current assignment -------------------
 
 module.exports = api;

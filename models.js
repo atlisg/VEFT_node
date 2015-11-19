@@ -41,7 +41,7 @@ const UserSchema = mongoose.Schema({
 });
 
 const CompanySchema = mongoose.Schema({
-	name: {
+	title: {
 		type: String,
 		required: true,
 		maxlength: 100,
@@ -51,11 +51,15 @@ const CompanySchema = mongoose.Schema({
 		type: String,
 		maxlength: 2000
 	},
-	punchcard_lifetime: {
-		type: Number,
+	url: {
+		type: String,
 		required: true,
-		min: 0,
-		max: 365
+		min: 4,
+		max: 100
+	},
+	created: {
+		type: Date,
+		default: new Date()
 	}
 });
 
