@@ -289,7 +289,7 @@ api.post('/punchcard/:company_id', (req, res) => {
 // Adding a new company to the api
 api.post('/companies', bodyParser.json(), (req, res) => {
 	// Only admin can post
-	if (adminToken !== req.headers.token) {
+	if (adminToken !== req.headers.admin_token) {
 		res.status(401).send("You don't have authorization to add a company.\n");
 		return;
 	}
