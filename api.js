@@ -309,10 +309,6 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 			return;
 		}
 
-		var company = {
-			q: 'title:' + c.title
-		};
-
 		elasticClient.search({
 			'index': 'punchy',
 			'type':  'companies',
@@ -398,6 +394,29 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 			} 
 		})*/
 	});	
+});
+
+// Fetching a list of all companies
+api.get('/companies', (req, res) => {
+	
+	const size = req.query.size || 20;
+	const page = req.query.page || 0;
+
+	elasticClient.search({
+			'index': 'punchy',
+			'type':  'companies',
+			'size': size,
+			'from': page,
+			'body': {
+				'sort': {
+					'title': 'asc'
+				}
+			}
+		}).then((doc) => {
+			res.send(doc.hits.hits.map((d) => d._source));
+		}, (err) => {
+			res.status(500).send('Server error\n');
+		});
 });
 
 
