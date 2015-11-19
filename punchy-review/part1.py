@@ -1,5 +1,6 @@
 from base import BasePart
 import random
+import time
 
 
 class Test(BasePart):
@@ -88,6 +89,11 @@ class Test(BasePart):
             'content-type': 'application/json',
         }
         self.make_request('post', self.url, data=data, headers=headers)
+
+        # Give ES minor time to reindex
+        time.sleep(2)
+
+        # Add the same company again
         resp = self.make_request('post', self.url, data=data, headers=headers)
         return resp.status_code == 409
 

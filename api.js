@@ -388,10 +388,6 @@ api.delete('/companies/:id', (req, res) => {
 
 	const cid = req.params.id;
 	models.Company.remove({ _id: cid }, (err, doc) => {
-		if (err) {
-			res.status(500).send('Server error (mongoDB)\n');
-			return;
-		}
 		if (!doc) {
 			res.status(404).send('No match for company.\n');
 			return;
@@ -430,6 +426,39 @@ api.get('/companies/:id', (req, res) => {
 			return;
 		}
 	});
+});
+
+// Searches for companies with given query and returns them
+api.post('/companies/search', bodyParser.json(), (req, res) => {
+	/*
+		The search can be a full-text search in the company documents within the Elasticsearch index. 
+		The respond should be a list of Json documents with the following fields:
+
+			id,
+			title
+			description
+			url
+
+		Other fields should be omitted.
+	*/
+
+	const search = req.body.search || '';
+	elasticClient.search({
+		'index': 'punchy',
+		'type': 'companies',
+		'body': {
+			'query': {
+				'term': {
+					'title': search,
+				}
+			}
+		}
+	}).then((docs) => {
+		res.send(docs.hits.hits.map((x) => x._source));
+	}, (err) => {
+		res.status(500).send(err);
+	});
+
 });
 
 // Update company with given id
@@ -518,7 +547,6 @@ api.post('/companies/:id', (req, res) => {
 		}
 	});
 });
-
 
 // ----------------- end of current assignment -------------------
 

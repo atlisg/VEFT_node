@@ -1,0 +1,3 @@
+#!/bin/bash          
+curl -XDELETE 'localhost:9200/punchy'
+curl -XPUT 'localhost:9200/punchy'

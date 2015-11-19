@@ -7,7 +7,7 @@ import part6
 
 # Tune these parameters.
 url_prefix = 'http://localhost:4000'
-admin_token = 'changeme'
+admin_token = '1234a56bcd78901e234fg567'
 
 if __name__ == '__main__':
     parts = [part1.Test, part2.Test, part3.Test, part4.Test, part5.Test, part6.Test]
