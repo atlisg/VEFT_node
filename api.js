@@ -8,9 +8,6 @@ const _ = require('lodash');
 const ObjectID = require('mongodb').ObjectID;
 const kafka = require('kafka-node');
 const elasticsearch = require('elasticsearch');
-const elasticClient = new elasticsearch.Client({
-	host: 'localhost:9200'
-});
 
 // Globals
 const adminToken = '1234a56bcd78901e234fg567';
@@ -19,6 +16,9 @@ const HighLevelProducer = kafka.HighLevelProducer;
 const client = new kafka.Client('localhost:2181');
 const producer = new HighLevelProducer(client);
 const cluster = 'http://localhost:9200/ClusterForPunchy/';
+const elasticClient = new elasticsearch.Client({
+	host: 'localhost:9200'
+});
 
 api.use(bodyParser.json());
 
@@ -295,7 +295,8 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 	}
 	// Payload must be JSON
 	if (!req.is('application/json')) {
-		res.status(415).send("Payload must be a JSON object.")
+		res.status(415).send("Payload must be a JSON object.");
+		return;
 	}
 
 	// create company doc from JSON object from body
@@ -309,9 +310,73 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 		}
 
 		var company = {
-			q: 'title:' + c.title;
+			q: 'title:' + c.title
 		};
-		$.ajax({
+
+		elasticClient.search({
+			'index': 'punchy',
+			'type':  'companies',
+			'body': {
+				'query': {
+					"match": {
+						'title': c.title
+					}
+				}
+			}
+		}).then((doc) => {
+			console.log('\nElastic search doc:');
+			console.log(doc);
+			if (doc.hits.total > 0) {
+				res.status(409).send("Company title already taken. Sorry.\n");
+				return;
+			}
+			// Save to MongoDB
+			c.save((err, doc) => {
+				if (err) {
+					res.status(500).send('Server error (mongoDB).\n');
+					return;
+				}
+				console.log('\nmongoDB doc:');
+				console.log(doc);
+				const data = {
+					'id'         : doc._id,
+					'title'      : doc.title,
+					'description': doc.description,
+					'url'        : doc.url,
+					'created'    : doc.created
+				}
+				// Save to Elastic Search
+				elasticClient.index({
+					'index' : 'punchy',
+					'type'  : 'companies',
+					'id'    : doc.id,
+					'body'  : data
+				}).then((respo) => {
+					console.log('\nElastic search indexing:')
+					console.log(respo);
+					res.status(201).send({ 'company_id': respo._id });
+					return;
+				},(error) => {
+					res.status(500).send('Server error (elastic).\n');
+					return;
+				});
+			});
+		}, (err) => {
+			console.log('err:');
+			console.log(err);
+		});
+
+		/*elasticClient.searchExists(company, (elasObj) => {
+			console.log(elasObj);
+			if (elasObj.status !== '404') {
+				res.status(409).send("Company title already taken. Sorry.");
+			} else {
+				
+			}
+		})*/
+
+		
+/*		$.ajax({
 			url: {cluster + 'companies/'}/_search,
 			dataType: 'jsonp',
 			success: function (company) {
@@ -331,7 +396,7 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 					});
 				}
 			} 
-		})
+		})*/
 	});	
 });
 
