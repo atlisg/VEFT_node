@@ -402,29 +402,30 @@ api.get('/companies', (req, res) => {
 	const page = req.query.page || 0;
 
 	elasticClient.search({
-			'index'  : 'punchy',
-			'type'   : 'companies',
-			'size'   : size,
-			'from'   : page,
-			"_source": [ "id", "title", "description", "url" ],
-			'body': {
-				'sort': [
-					{ 'id': 'asc' }
-				]
-			}
-		}).then((doc) => {
-			console.log('doc:');
-			console.log(doc);
-			res.send(doc.hits.hits.map((d) => d._source));
-		}, (err) => {
-			res.status(500).send('Server error\n');
-		});
+		'index'  : 'punchy',
+		'type'   : 'companies',
+		'size'   : size,
+		'from'   : page,
+		"_source": [ "id", "title", "description", "url" ],
+		'body': {
+			'sort': [
+				{ 'id': 'asc' }
+			]
+		}
+	}).then((doc) => {
+		console.log('doc:');
+		console.log(doc);
+		res.send(doc.hits.hits.map((d) => d._source));
+	}, (err) => {
+		res.status(500).send('Server error\n');
+	});
 });
 
 // Remove company from mongoDB and ElasticSearch
-api.delete('/companies:id', (req, res) => {
+api.delete('/companies/:id', (req, res) => {
+	console.log('here');
 	// Only admin can delete
-	if (adminToken !== req.headers.token) {
+	if (adminToken !== req.headers.admin_token) {
 		res.status(401).send("You don't have authorization to delete a company.\n");
 		return;
 	}
@@ -432,15 +433,25 @@ api.delete('/companies:id', (req, res) => {
 	const cid = req.params.id;
 	models.Company.remove({ _id: cid }, (err, doc) => {
 		if (err) {
-			res.status(500).send('Server error\n');
+			res.status(500).send('Server error (mongoDB)\n');
 			return;
 		}
 		if (!doc) {
 			res.status(404).send('No match for company.\n');
 			return;
 		}
-		// Found document in mongoDB, now remove it
-		
+		// Removed document from mongoDB, now onto ElasticSearch
+		elasticClient.delete({
+			'index'  : 'punchy',
+			'type'   : 'companies',
+			'id'     : cid
+		}).then((doc) => {
+			console.log(doc);
+			res.status(204).send('Document successfully deleted from mongoDB and elasticSearch.\n');
+		}, (err) => {
+			res.status(500).send('Server error (ElasticSearch)\n')
+		});
+
 	});
 
 });
