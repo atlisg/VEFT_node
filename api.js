@@ -399,18 +399,21 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 // Fetching a list of all companies
 api.get('/companies', (req, res) => {
 	
-	const size = req.query.size || 20;
 	const page = req.query.page || 0;
+	const size = req.query.max  || 20;
 
 	elasticClient.search({
 			'index': 'punchy',
 			'type':  'companies',
 			'size': size,
 			'from': page,
+			'_source' : ["id", "title", "description", "url"],
 			'body': {
-				'sort': {
-					'title': 'asc'
-				}
+				'sort': [
+					{
+						'title': 'asc'
+					}
+				]
 			}
 		}).then((doc) => {
 			res.send(doc.hits.hits.map((d) => d._source));
