@@ -1,6 +1,59 @@
 # VEFT_node
 Assignments in Node.js in Web services (T-514-VEFT, Vefþjónustur, 2015-3)
 
+## Assignment 10
+
+### Til að keyra:
+
+1. Install Kafka and Zookeeper (sjá verkefnalýsingu).
+
+2. Install dependencies `npm install`.
+
+3. Start Zookeeper: Verum í Kafka möppunni (hjá okkur: ~/Downloads/kafka_2.9.1-0.8.2.2) og keyrum `bin/zookeeper-server-start.sh config/zookeeper.properties`
+
+4. Start Kafka: Verum í Kafka möppunni og keyrum `bin/kafka-server-start.sh config/server.properties`
+
+5. Búum til nýtt topic: Verum í Kafka möppunni og keyrum `bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic users`
+
+6. MongoDB þarf að vera uppsett og keyrandi: `mongod --dbpath {pathForDatabase}` (T.d. `mkdir /tmp/data` svo `mongod --dbpath /tmp/data`)
+
+7. Download Elastic Search. Extract it. Inní þeirri möppu, keyrðu: `bin/elasticsearch`.
+
+8. Keyrðu scriptuna okkar til að hreinsa elastic, `./init`.
+
+9. Keyrum upp serverinn (úr verkefnamöppunni): `node index.js`
+Keyra með nodemon: `~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js index.js`
+
+10. Keyrðu upp consumerinn (úr verkefnamöppunni): `node token_consumer.js`
+Keyra með nodemon: `~/<PathToProjectFolder>/node_modules/nodemon/bin/nodemon.js token_consumer.js`
+
+### Til að testa:
+
+Keyrðu python scriptuna hans HlySig, sjá [hér](https://github.com/atlisg12/VEFT_node/tree/master/punchy-review).
+
+#### /companies - POST
+- curl -XPOST -d "{\"title\": \"VeganBot\", \"url\": \"www.veganbot.com\", \"description\": \"Fighting animal abuse\" }" -H "Content-Type: Application/json" -H "admin_token: 1234a56bcd78901e234fg567" http://localhost:4000/companies
+- curl -XPOST -d "{\"title\": \"Enter Iceland\", \"url\": \"www.entericeland.com\", \"description\": \"not sexual\" }" -H "Content-Type: Application/json" -H "admin_token: 1234a56bcd78901e234fg567" http://localhost:4000/companies
+
+#### /companies/ - GET
+- curl http://localhost:4000/companies | python -m json.tool
+
+#### /companies[?page=N&max=N] - GET
+- curl http://localhost:4000/companies\?page\=1\&max\=1 | python -m json.tool
+
+#### /companies/{id} - GET
+- curl http://localhost:4000/companies/{id} | python -m json.tool
+
+#### /companies/{id} - POST (update)
+- curl -XPOST -d "{\"url\": \"www.enter-iceland.com\", \"description\": \"NOT sexual I promise.then\" }" -H "Content-Type: Application/json" -H "admin_token: 1234a56bcd78901e234fg567" http://localhost:4000/companies/{id}
+
+#### /companies/{id} - DELETE
+- curl -XDELETE -H "admin_token: 1234a56bcd78901e234fg567" http://localhost:4000/companies/{id}
+
+#### /companies/search - POST
+- curl -XPOST -d "{ \"search\": \"enter\" }" -H "Content-Type: Application/json" http://localhost:4000/companies/search | python -m json.tool
+
+
 ## Assignment 9
 
 ### Til að keyra:

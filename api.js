@@ -311,8 +311,6 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 				}
 			}
 		}).then((doc) => {
-			console.log('\nElastic search doc:');
-			console.log(doc);
 			if (doc.hits.total > 0) {
 				res.status(409).send("Company title already taken. Sorry.\n");
 				return;
@@ -323,8 +321,6 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 					res.status(500).send('Server error (mongoDB).\n');
 					return;
 				}
-				console.log('\nmongoDB doc:');
-				console.log(doc);
 				const data = {
 					'id'         : doc._id,
 					'title'      : doc.title,
@@ -339,8 +335,6 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 					'id'    : doc.id,
 					'body'  : data
 				}).then((respo) => {
-					console.log('\nElastic search indexing:')
-					console.log(respo);
 					res.status(201).send({ 'id': respo._id });
 					return;
 				},(error) => {
@@ -364,11 +358,11 @@ api.get('/companies', (req, res) => {
 		'index'  : 'punchy',
 		'type'   : 'companies',
 		'size'   : max,
-		'from'   : page,
+		'from'   : page*max,
 		"_source": [ "id", "title", "description", "url" ],
 		'body': {
 			'sort': [
-				{ 'id': 'asc' }
+				{ 'title': 'asc' }
 			]
 		}
 	}).then((doc) => {
