@@ -449,9 +449,12 @@ api.post('/companies/search', bodyParser.json(), (req, res) => {
 		"_source": [ "id", "title", "description", "url" ],
 		'body': {
 			'query': {
-				'term': {
+				/*'term': {
 					'title': search,
-				}
+				}*/
+				'query_string': {
+		          'query': search,
+		        }
 			}
 		}
 	}).then((docs) => {
