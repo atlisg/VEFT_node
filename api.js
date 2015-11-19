@@ -372,8 +372,6 @@ api.get('/companies', (req, res) => {
 			]
 		}
 	}).then((doc) => {
-		console.log('doc:');
-		console.log(doc);
 		res.send(doc.hits.hits.map((d) => d._source));
 	}, (err) => {
 		res.status(500).send('Server error\n');
@@ -382,7 +380,6 @@ api.get('/companies', (req, res) => {
 
 // Remove company from mongoDB and ElasticSearch
 api.delete('/companies/:id', (req, res) => {
-	console.log('here');
 	// Only admin can delete
 	if (adminToken !== req.headers.admin_token) {
 		res.status(401).send("You don't have authorization to delete a company.\n");
