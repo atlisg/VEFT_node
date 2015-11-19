@@ -449,6 +449,7 @@ api.post('/companies/search', bodyParser.json(), (req, res) => {
 	elasticClient.search({
 		'index': 'punchy',
 		'type': 'companies',
+		"_source": [ "id", "title", "description", "url" ],
 		'body': {
 			'query': {
 				'term': {
