@@ -296,20 +296,13 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 			res.status(412).send("Couldn't save company because payload was invalid.\n");
 			return;
 		}
-
-		elasticClient.search({
-			'index': 'punchy',
-			'type':  'companies',
-			'body': {
-				'query': {
-					"match": {
-						'title': c.title
-					}
-				}
+		models.Company.findOne({ 'title': c.title }, (err, doc) => {
+			if (err) {
+				res.status(500).send('Server error. (mongoDB)\n');
+				return;
 			}
-		}).then((doc) => {
-			if (doc.hits.total > 0) {
-				res.status(409).send("Company title already taken. Sorry.\n");
+			if (doc) {
+				res.status(409).send('Company title already taken. Sorbert.\n');
 				return;
 			}
 			// Save to MongoDB
@@ -339,9 +332,6 @@ api.post('/companies', bodyParser.json(), (req, res) => {
 					return;
 				});
 			});
-		}, (err) => {
-			res.status(500).send('Server error.\n');
-			return;
 		});
 	});	
 });
@@ -476,66 +466,57 @@ api.post('/companies/:id', (req, res) => {
 			// create company doc from JSON object from body
 			const c = req.body;
 
-			elasticClient.search({
-					'index': 'punchy',
-					'type':  'companies',
-					'body': {
-						'query': {
-							"match": {
-								'title': c.title || ""
-							}
-						}
-					}
-				}).then((result) => {
-					if (c.title) {
-						// If the name already exists.
-						 if (result.hits.total > 0) {
-							res.status(409).send("Company title already taken. Sorry.\n");
-							return;
-						}
-						doc.title = c.title;
-					}
-					if (c.created) {
-						doc.created = c.created;
-					}
-					if (c.url) {
-						doc.url = c.url;
-					}
-					if (c.description) {
-						doc.description = c.description;
-					}
+			models.Company.findOne({ 'title': c.title }, (error, docum) => {
+				if (error) {
+					res.status(500).send('Server error. (mongoDB)\n');
+					return;
+				}
+				if (docum) {
+					res.status(409).send('Company title already taken. Sorbert.\n');
+					return;
+				}
+				if (c.title) {
+					doc.title = c.title;
+				}
+				if (c.created) {
+					doc.created = c.created;
+				}
+				if (c.url) {
+					doc.url = c.url;
+				}
+				if (c.description) {
+					doc.description = c.description;
+				}
 
-					// Save document
-					doc.save((err, doc) => {
-						if (err) {
-							res.status(500).send('Server error. (mongodb update)\n');
-							return;
-						}
-						// Update the search index
-						elasticClient.update({
-							'index': 'punchy',
-							'type':  'companies',
-							'id': id,
-							'body': {
-								'doc': {
-									'title': doc.title,
-									'created': doc.created,
-									'url': doc.url,
-									'description': doc.description
-								}
+				// Save document
+				doc.save((err, doc) => {
+					if (err) {
+						res.status(500).send('Server error. (mongodb update)\n');
+						return;
+					}
+					// Update the search index
+					elasticClient.update({
+						'index': 'punchy',
+						'type':  'companies',
+						'id': id,
+						'body': {
+							'doc': {
+								'title': doc.title,
+								'created': doc.created,
+								'url': doc.url,
+								'description': doc.description
 							}
-						}, (err) => {
-							res.status(500).send(err);
-							return;
-						}, (response) => {
-							res.status(201).send(response);
-						});
+						}
+					}).then((err) => {
+						res.status(500).send(err);
+						return;
+					}, (response) => {
+						res.status(201).send(response);
 					});
 				});
-
-
+			});
 		} else {
-			res.status(404).send("Company not found.\n");
+			res.status(404).send("No company found with the given id.\n");
 			return;
 		}
 	});
